@@ -273,7 +273,7 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         border: const OutlineInputBorder(),
         hintText: 'Ex: 10.0',
         suffixIcon: IconButton(
-          icon: const Icon(Icons.help_outline, color: Colors.deepPurple),
+          icon: Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
           onPressed: () => _mostrarAjudaDialog(
             "Ajuda: $labelText",
             helpText,
@@ -289,13 +289,13 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
   }
 
   Widget _buildExperimentView() {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text("Controle do Experimento", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
+          Text("Controle do Experimento", style: theme.textTheme.titleLarge),
           Card(
             color: Colors.grey.shade200,
             child: Padding(
@@ -327,14 +327,14 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
           ),
           const SizedBox(height: 24),
           const Divider(),
-          const Text("Dados do Experimento", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text("Dados do Experimento", style: theme.textTheme.titleLarge),
           const SizedBox(height: 10),
           Card(child: ListTile(leading: const Icon(Icons.monitor_heart, color: Colors.deepPurple), title: const Text("Status da Bancada"), trailing: Text(_statusBancada, style: const TextStyle(fontWeight: FontWeight.bold)))),
           Card(child: ListTile(leading: const Icon(Icons.waves, color: Colors.blue), title: const Text("Nível da Água"), trailing: Text('$_nivelAgua cm', style: const TextStyle(fontWeight: FontWeight.bold)))),
           Card(child: ListTile(leading: const Icon(Icons.flash_on, color: Colors.orange), title: const Text("Tensão na Bomba"), trailing: Text('$_tensao %', style: const TextStyle(fontWeight: FontWeight.bold)))),
           
           const SizedBox(height: 24),
-          const Text("Gráfico em Tempo Real", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+           Text("Gráfico em Tempo Real", style: theme.textTheme.titleLarge),
           const SizedBox(height: 10),
           
           Container(
@@ -386,15 +386,14 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text("Parâmetros do Sistema", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text("Parâmetros do Sistema", style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 10),
-        Card(
-          color: Colors.grey.shade200,
+         Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: _buildParameterTextField(
               labelText: "Referência (ref)",
-              helpText: "A referência (ou setpoint) é o valor desejado para a saída do sistema (o nível da água).",
+              helpText: "A referência (ou setpoint) é o valor desejado para a saída do sistema...",
               controller: _refController,
               equation: Math.tex(r'x_{ss} = N_x \cdot ref', textStyle: const TextStyle(fontSize: 16)),
             ),
@@ -402,12 +401,11 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         ),
         const SizedBox(height: 10),
         Card(
-          color: Colors.grey.shade200,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: _buildParameterTextField(
               labelText: "Ganho K",
-              helpText: "O ganho K é a matriz de ganhos de realimentação de estado.",
+              helpText: "O ganho K é a matriz de ganhos de realimentação de estado...",
               controller: _kController,
               equation: Math.tex(r'u = -K \cdot x', textStyle: const TextStyle(fontSize: 16)),
             ),
@@ -415,12 +413,11 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         ),
         const SizedBox(height: 10),
         Card(
-          color: Colors.grey.shade200,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: _buildParameterTextField(
               labelText: "Ganho Ke",
-              helpText: "O ganho Ke é a matriz de ganho do observador de estados.",
+              helpText: "O ganho Ke é a matriz de ganho do observador de estados...",
               controller: _keController,
               equation: Math.tex(r'\dot{\hat{x}} = A\hat{x} + Bu + K_e(y - C\hat{x})', textStyle: const TextStyle(fontSize: 16)),
             ),
@@ -428,12 +425,11 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         ),
         const SizedBox(height: 10),
         Card(
-          color: Colors.grey.shade200,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: _buildParameterTextField(
               labelText: "Ganho Nx",
-              helpText: "O ganho Nx é a matriz de ganho de pré-compensação.",
+              helpText: "O ganho Nx é a matriz de ganho de pré-compensação...",
               controller: _nxController,
               equation: Math.tex(r'x_{ss} = N_x \cdot ref', textStyle: const TextStyle(fontSize: 16)),
             ),
@@ -441,29 +437,32 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         ),
         const SizedBox(height: 10),
         Card(
-          color: Colors.grey.shade200,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: _buildParameterTextField(
               labelText: "Ganho Nu",
-              helpText: "O ganho Nu é a matriz de ganho de controle de regime permanente.",
+              helpText: "O ganho Nu é a matriz de ganho de controle de regime permanente...",
               controller: _nuController,
               equation: Math.tex(r'u_{ss} = N_u \cdot ref', textStyle: const TextStyle(fontSize: 16)),
             ),
           ),
         ),
         const SizedBox(height: 24),
-        ElevatedButton(
+         ElevatedButton(
           onPressed: connectAndPublish,
-          child: const Text('Enviar Parâmetros', style: TextStyle(fontSize: 18)),
+          child: const Text('Enviar Parâmetros'),
         ),
-        if (_statusMessage.isNotEmpty) 
+        const SizedBox(height: 12),
+        if (_statusMessage.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.only(top: 12.0),
+            padding: const EdgeInsets.all(8.0),
             child: Text(
               _statusMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(color: _statusMessage.startsWith("Erro") ? Colors.red : Colors.black),
+              style: TextStyle(
+                  color: _statusMessage.startsWith("Erro")
+                      ? Theme.of(context).colorScheme.error
+                      : Theme.of(context).colorScheme.onSurface),
             ),
           )
       ],

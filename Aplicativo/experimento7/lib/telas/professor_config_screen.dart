@@ -224,6 +224,9 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
   }
 
   Widget _buildBody() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     if (_connectionStatus.isNotEmpty) {
       return Center(
         child: Column(
@@ -247,12 +250,12 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('local'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'local' ? Colors.deepPurple : Colors.grey), child: const Text("Local"))),
+            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('local'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'local' ? colorScheme.primary : colorScheme.surfaceVariant, foregroundColor: _selectedMode == 'local' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Local"))),
             const SizedBox(width: 10),
-            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('remoto'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'remoto' ? Colors.deepPurple : Colors.grey), child: const Text("Remoto"))),
+            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('remoto'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'remoto' ? colorScheme.primary : colorScheme.surfaceVariant, foregroundColor: _selectedMode == 'remoto' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Remoto"))),
           ],
         ),
-        if (_selectedMode == 'remoto') _buildRemoteModeWidgets(),
+        if (_selectedMode == 'remoto') _buildRemoteModeWidgets(colorScheme, isDark),
         
         const SizedBox(height: 30),
         ElevatedButton(
@@ -265,7 +268,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
     );
   }
 
-  Widget _buildRemoteModeWidgets() {
+  Widget _buildRemoteModeWidgets(ColorScheme colorScheme, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -273,11 +276,11 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         // Card de status da conexão Wi-Fi
         if (AppGlobals.connectedWifiNetwork == "Nenhuma")
             Card(
-              child: Padding(
+               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    const Text("Conexão Wi-Fi do ESP", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text("Conexão Wi-Fi da Bancada", style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 16),
                     if (_isScanningWifi) const CircularProgressIndicator(),
                     if (!_isScanningWifi && !_isWifiCardVisible)
@@ -292,33 +295,40 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
                         leading: const Icon(Icons.wifi),
                         trailing: Text("${net.rssi} dBm"),
                         onTap: () => _showWifiPasswordDialog(net.ssid),
-                      )),
+                      )).toList(),
                   ],
                 ),
               ),
             )
         else
-            Card(
-              color: Colors.green.shade100,
+             Card(
+              color: isDark ? colorScheme.primaryContainer.withOpacity(0.3) : Colors.green.shade50,
               child: ListTile(
                 leading: const Icon(Icons.wifi, color: Colors.green),
                 title: const Text("Conectado à rede:"),
                 subtitle: Text(AppGlobals.connectedWifiNetwork, style: const TextStyle(fontWeight: FontWeight.bold)),
-                trailing: const Icon(Icons.check_circle, color: Colors.green),
-                onTap: _startWifiScan,
+                trailing: IconButton(
+                  icon: const Icon(Icons.sync),
+                  tooltip: "Procurar outras redes",
+                  onPressed: _startWifiScan,
+                ),
               ),
             ),
         
         const Divider(height: 40),
         // Card de status do Broker MQTT
-        Card(
-          color: AppGlobals.isMqttConnected ? Colors.green.shade100 : Colors.grey.shade100,
-          child: Padding(
+         Card(
+          color: AppGlobals.isMqttConnected
+              ? (isDark
+                  ? colorScheme.primaryContainer.withOpacity(0.3)
+                  : Colors.green.shade50)
+              : null,
+           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text("Credenciais do Broker MQTT", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text("Credenciais do Broker MQTT", style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 16),
                 TextField(controller: _ipController, decoration: const InputDecoration(labelText: "IP do Broker")),
                 const SizedBox(height: 10),
@@ -332,7 +342,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _connectToBroker,
-                  child: Text(AppGlobals.isMqttConnected ? "Reconectar ao Broker" : "Conectar ao Broker"),
+                  child: Text(AppGlobals.isMqttConnected ? "Enviar Novamente" : "Enviar para Bancada"),
                 )
               ],
             ),
