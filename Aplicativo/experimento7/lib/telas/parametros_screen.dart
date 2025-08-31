@@ -296,8 +296,7 @@ class _ParametrosScreenState extends State<ParametrosScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text("Controle do Experimento", style: theme.textTheme.titleLarge),
-          Card(
-            color: Colors.grey.shade200,
+           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
