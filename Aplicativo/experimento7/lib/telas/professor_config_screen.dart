@@ -1,9 +1,6 @@
-// lib/screens/professor_config_screen.dart
-
 import 'package:flutter/material.dart';
 import '../globals.dart';
 import '../servicos/communication_service.dart';
-
 
 class ProfessorConfigScreen extends StatefulWidget {
   const ProfessorConfigScreen({super.key});
@@ -16,13 +13,13 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
   final CommunicationService _commService = CommunicationService();
   String _connectionStatus = "Iniciando...";
   bool _hasError = false;
-  String _selectedMode = '';
+  String _selectedMode = 'remoto';
   bool _canAdvance = false;
 
   bool _isScanningWifi = false;
   List<WifiNetwork> _wifiNetworks = [];
   bool _isWifiCardVisible = false;
-  
+
   final _ipController = TextEditingController(text: '192.168.15.79');
   final _portController = TextEditingController(text: '1883');
   final _userController = TextEditingController();
@@ -34,19 +31,19 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
   void initState() {
     super.initState();
     _initializeConnection();
-    // Verifica o estado inicial para habilitar o avanço
     _canAdvance = AppGlobals.isBleConnected || AppGlobals.isMqttConnected;
   }
 
   @override
   void dispose() {
-    _commService.disconnectFromEsp();
-    _commService.disconnectFromMqtt();
+    _ipController.dispose();
+    _portController.dispose();
+    _userController.dispose();
+    _passController.dispose();
     super.dispose();
   }
 
   Future<void> _initializeConnection() async {
-    // Se a conexão BLE já foi feita, não precisa refazer a autenticação
     if (AppGlobals.isBleConnected) {
       setState(() => _connectionStatus = "");
       _showFeedbackDialog("Já Conectado", "A bancada já está conectada via BLE.", autoClose: true);
@@ -80,7 +77,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         AppGlobals.isBleConnected = true;
         AppGlobals.statusBluetooth = "Conectado";
         _connectionStatus = "";
-        _canAdvance = true;
+        _canAdvance = AppGlobals.isBleConnected || AppGlobals.isMqttConnected;
       });
       _showFeedbackDialog("Sucesso!", authResponse['mensagem'], autoClose: true);
     } else {
@@ -94,11 +91,12 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
     AppGlobals.connectionStatusNotifier.value = !AppGlobals.connectionStatusNotifier.value;
   }
 
-  void _showFeedbackDialog(String title, String content, {bool autoClose = false, List<Widget>? actions}) {
+   void _showFeedbackDialog(String title, String content, {bool autoClose = false, bool isDismissible = true}) {
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(title: Text(title), content: Text(content), actions: actions),
+      barrierDismissible: isDismissible,
+      builder: (context) => AlertDialog(title: Text(title), content: Text(content)),
     );
     if (autoClose) {
       Future.delayed(const Duration(seconds: 2), () {
@@ -110,14 +108,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
   void _onModeSelected(String mode) {
       setState(() {
         _selectedMode = mode;
-        if (mode == 'local') {
-          _canAdvance = AppGlobals.isBleConnected;
-          if (_canAdvance) {
-            _showFeedbackDialog("Modo Local", "Bancada conectada. Você pode avançar.", autoClose: true);
-          }
-        } else {
-          _canAdvance = AppGlobals.isMqttConnected;
-        }
+        _canAdvance = AppGlobals.isBleConnected || AppGlobals.isMqttConnected;
       });
   }
 
@@ -136,28 +127,31 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
     setState(() => _isScanningWifi = false);
   }
 
-  void _showWifiPasswordDialog(String ssid) {
+   void _showWifiPasswordDialog(String ssid) {
     final passwordController = TextEditingController();
     bool isObscure = true;
-    showDialog(context: context, builder: (context) {
-      return StatefulBuilder(builder: (context, setDialogState) {
-        return AlertDialog(
-          title: Text("Conectar à rede $ssid"),
-          content: TextField(controller: passwordController, obscureText: isObscure, decoration: InputDecoration(labelText: "Senha", suffixIcon: IconButton(icon: Icon(isObscure ? Icons.visibility : Icons.visibility_off), onPressed: () => setDialogState(() => isObscure = !isObscure)))),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Cancelar")),
-            ElevatedButton(onPressed: () {
-              Navigator.of(context).pop();
-              _handleWifiConnection(ssid, passwordController.text);
-            }, child: const Text("Conectar")),
-          ],
-        );
-      });
-    });
+    showDialog(
+      context: context, barrierDismissible: false, 
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text("Conectar à rede $ssid"),
+            content: TextField(controller: passwordController, obscureText: isObscure, decoration: InputDecoration(labelText: "Senha", suffixIcon: IconButton(icon: Icon(isObscure ? Icons.visibility : Icons.visibility_off), onPressed: () => setDialogState(() => isObscure = !isObscure)))),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Cancelar")),
+              ElevatedButton(onPressed: () {
+                Navigator.of(context).pop();
+                _handleWifiConnection(ssid, passwordController.text);
+              }, child: const Text("Conectar")),
+            ],
+          );
+        });
+      },
+    );
   }
   
   Future<void> _handleWifiConnection(String ssid, String password) async {
-    _showFeedbackDialog("Conectando...", "Enviando credenciais para o ESP...", autoClose: false);
+     _showFeedbackDialog("Conectando...", "Enviando credenciais para o ESP...", isDismissible: false);
     final response = await _commService.connectToWifi(ssid, password);
     if (mounted) Navigator.of(context, rootNavigator: true).pop();
 
@@ -176,14 +170,12 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
   }
   
   Future<void> _connectToBroker() async {
-      // Se já estiver conectado, não faz nada
-      if (AppGlobals.isMqttConnected) {
-        _showFeedbackDialog("Já Conectado", "O broker já está conectado.", autoClose: true);
-        setState(() => _canAdvance = true);
+      if (!AppGlobals.isBleConnected) {
+        _showFeedbackDialog("Erro de Conexão", "A bancada precisa estar conectada via Bluetooth para enviar as credenciais do Broker.", autoClose: true);
         return;
       }
       
-      _showFeedbackDialog("Conectando...", "Enviando dados do Broker para o ESP...", autoClose: false);
+      _showFeedbackDialog("Conectando...", "Enviando dados do Broker para o ESP...", isDismissible: false);
       
       setState(() => AppGlobals.statusBroker = "Conectando...");
       AppGlobals.connectionStatusNotifier.value = !AppGlobals.connectionStatusNotifier.value;
@@ -206,6 +198,8 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
           setState(() {
               AppGlobals.isMqttConnected = true;
               AppGlobals.statusBroker = "Conectado";
+              // CORREÇÃO: Salva o IP do Broker na variável global
+              AppGlobals.ipBrokerMQTT = _ipController.text;
               _canAdvance = true;
           });
       } else {
@@ -220,13 +214,6 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _buildBody();
-  }
-
-  Widget _buildBody() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
     if (_connectionStatus.isNotEmpty) {
       return Center(
         child: Column(
@@ -243,10 +230,18 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         ),
       );
     }
+    return _buildBody();
+  }
+
+  Widget _buildBody() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text("Selecione o Modo de Operação", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text("Modo de Operação da Bancada", style: theme.textTheme.titleLarge),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -260,7 +255,8 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         const SizedBox(height: 30),
         ElevatedButton(
           onPressed: _canAdvance ? () {
-            AppGlobals.pageController.animateToPage(2, duration: const Duration(milliseconds: 300), curve: Curves.ease);
+            // CORREÇÃO: Navega para a página 3 (Monitoramento)
+            AppGlobals.pageController.animateToPage(3, duration: const Duration(milliseconds: 300), curve: Curves.ease);
           } : null,
           child: const Text("Avançar para Monitoramento"),
         )
@@ -273,10 +269,9 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Divider(height: 40),
-        // Card de status da conexão Wi-Fi
         if (AppGlobals.connectedWifiNetwork == "Nenhuma")
             Card(
-               child: Padding(
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
@@ -301,7 +296,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
               ),
             )
         else
-             Card(
+            Card(
               color: isDark ? colorScheme.primaryContainer.withOpacity(0.3) : Colors.green.shade50,
               child: ListTile(
                 leading: const Icon(Icons.wifi, color: Colors.green),
@@ -316,14 +311,13 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
             ),
         
         const Divider(height: 40),
-        // Card de status do Broker MQTT
-         Card(
+        Card(
           color: AppGlobals.isMqttConnected
               ? (isDark
                   ? colorScheme.primaryContainer.withOpacity(0.3)
                   : Colors.green.shade50)
               : null,
-           child: Padding(
+          child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

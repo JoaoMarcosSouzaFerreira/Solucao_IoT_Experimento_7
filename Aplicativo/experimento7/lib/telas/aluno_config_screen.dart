@@ -38,10 +38,11 @@ class _AlunoConfigScreenState extends State<AlunoConfigScreen> {
     super.dispose();
   }
 
-  void _showFeedbackDialog(String title, String content, {bool autoClose = false}) {
+  void _showFeedbackDialog(String title, String content, {bool autoClose = false, bool isDismissible = true}) {
     if (!mounted) return;
     showDialog(
       context: context,
+       barrierDismissible: isDismissible,
       builder: (context) => AlertDialog(title: Text(title), content: Text(content)),
     );
     if (autoClose) {
@@ -50,6 +51,7 @@ class _AlunoConfigScreenState extends State<AlunoConfigScreen> {
       });
     }
   }
+
 
   Future<void> _handleLocalConnection() async {
     if (!mounted) return;
