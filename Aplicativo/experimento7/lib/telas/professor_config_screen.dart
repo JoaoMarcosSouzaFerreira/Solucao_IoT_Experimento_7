@@ -245,9 +245,9 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('local'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'local' ? colorScheme.primary : colorScheme.surfaceVariant, foregroundColor: _selectedMode == 'local' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Local"))),
+            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('local'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'local' ? colorScheme.primary : colorScheme.surfaceContainerHighest, foregroundColor: _selectedMode == 'local' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Local"))),
             const SizedBox(width: 10),
-            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('remoto'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'remoto' ? colorScheme.primary : colorScheme.surfaceVariant, foregroundColor: _selectedMode == 'remoto' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Remoto"))),
+            Expanded(child: ElevatedButton(onPressed: () => _onModeSelected('remoto'), style: ElevatedButton.styleFrom(backgroundColor: _selectedMode == 'remoto' ? colorScheme.primary : colorScheme.surfaceContainerHighest, foregroundColor: _selectedMode == 'remoto' ? colorScheme.onPrimary : colorScheme.onSurfaceVariant), child: const Text("Remoto"))),
           ],
         ),
         if (_selectedMode == 'remoto') _buildRemoteModeWidgets(colorScheme, isDark),
@@ -290,7 +290,7 @@ class _ProfessorConfigScreenState extends State<ProfessorConfigScreen> {
                         leading: const Icon(Icons.wifi),
                         trailing: Text("${net.rssi} dBm"),
                         onTap: () => _showWifiPasswordDialog(net.ssid),
-                      )).toList(),
+                      )),
                   ],
                 ),
               ),
